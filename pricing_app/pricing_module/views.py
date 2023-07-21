@@ -7,8 +7,8 @@ from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 
-from .models import PricingConfig
-from .serializers import PricingConfigSerializer
+from .models import PricingConfig, ActionLog
+from .serializers import PricingConfigSerializer, ActionLogSerializer
 
 
 class PricingConfigListCreateView(generics.ListCreateAPIView):
@@ -29,6 +29,15 @@ class PricingConfigListCreateView(generics.ListCreateAPIView):
                 )
         serializer.save(created_by=self.request.user, updated_by=self.request.user)
 
+        action_log = ActionLog.objects.create(
+            user=self.request.user,
+            action_type='create',
+            model_name='PricingConfig',
+            record_id=serializer.instance.pk,
+            old_data={},
+            new_data=serializer.data
+        )
+
 
 class PricingConfigRetrieveUpdateDeleteView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PricingConfigSerializer
@@ -47,13 +56,33 @@ class PricingConfigRetrieveUpdateDeleteView(generics.RetrieveUpdateDestroyAPIVie
         price_config = self.get_object()
         serializer = self.get_serializer(price_config, data=request.data, partial=True)
         if serializer.is_valid():
+            old_data = PricingConfigSerializer(price_config).data
             serializer.save(updated_by=self.request.user)
+
+            action_log = ActionLog.objects.create(
+                user=self.request.user,
+                action_type='update',
+                model_name='PricingConfig',
+                record_id=price_config.pk,
+                old_data=old_data,
+                new_data=serializer.data
+            )
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def destroy(self, request, *args, **kwargs):
         price_config = self.get_object()
         price_config.delete()
+
+        action_log = ActionLog.objects.create(
+            user=self.request.user,
+            action_type='delete',
+            model_name='PricingConfig',
+            record_id=price_config.pk,
+            old_data=PricingConfigSerializer(price_config).data,
+            new_data={}
+        )
+
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -105,3 +134,8 @@ class CalculatePricingView(APIView):
         total_fare = float(active_config.distance_base_price) + extra_price + waiting_charges
 
         return JsonResponse({'Total Fare': round(total_fare, 2)})
+
+
+class ActionLogListView(generics.ListAPIView):
+    queryset = ActionLog.objects.all()
+    serializer_class = ActionLogSerializer

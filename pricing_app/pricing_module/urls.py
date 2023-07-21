@@ -11,4 +11,5 @@ urlpatterns = [
     path('pricing_config', views.PricingConfigListCreateView.as_view(), name='price_config_list_create'),
     path('pricing_config/<int:pk>', views.PricingConfigRetrieveUpdateDeleteView.as_view(), name='price_config_retrieve_update_delete'),
     path('calculate_price', views.CalculatePricingView.as_view(), name='calculate_price'),
+    path('action_logs', views.ActionLogListView.as_view(), name='action_logs')
 ]

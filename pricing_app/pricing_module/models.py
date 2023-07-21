@@ -66,3 +66,19 @@ class PricingConfig(models.Model):
                     {'is_active': f'There is already an active=True instance with day={self.get_day_display()}.'}
                 )
 
+
+class ActionLog(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    model_name = models.CharField(max_length=100)
+    action_type = models.CharField(max_length=100)
+    record_id = models.PositiveIntegerField()
+    old_data = models.JSONField()
+    new_data = models.JSONField()
+    action_time = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-action_time']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.model_name} ({self.record_id}) - {self.action_time}"
+
