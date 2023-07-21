@@ -139,3 +139,4 @@ class CalculatePricingView(APIView):
 class ActionLogListView(generics.ListAPIView):
     queryset = ActionLog.objects.all()
     serializer_class = ActionLogSerializer
+    permission_classes = [IsAuthenticated]
